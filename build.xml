@@ -2,8 +2,8 @@
     <property environment="env"/>
     
     <!-- Project properties -->
-    <property name="version.num" value="1.3.0" />
-    <property name="project" value="airbrake-android" />
+    <property name="version.num" value="0.2.0" />
+    <property name="project" value="errbit-android" />
 
     <!-- Standard jar stuff -->
     <property name="jarfile" value="${project}-${version.num}.jar" />

@@ -1,4 +1,10 @@
 /*
+    Errbit Notifier for Android
+    Copyright (c) 2012 Matteo Piotto <matteo.piotto@welaika.com>
+    http://welaika.com
+    
+    based on
+    
     Airbrake Notifier for Android
     Copyright (c) 2011 James Smith <james@loopj.com>
     http://loopj.com
@@ -16,7 +22,7 @@
     limitations under the License.
 */
 
-package com.loopj.android.airbrake;
+package com.welaika.android.errbit;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -37,28 +43,30 @@ import org.xmlpull.v1.XmlSerializer;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.content.Context;
 import android.os.AsyncTask;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Xml;
 
 /**
- * Airbrake Notifier
+ * ErrBit Notifier
  *
- * Logs exceptions to Airbrake App (http://www.airbrakeapp.com)
+ * Logs exceptions to Errbit
+ * 
+ * Based on https://github.com/loopj/airbrake-android/ v.1.3.0  
  */
-public class AirbrakeNotifier {
-    private static final String LOG_TAG = "AirbrakeNotifier";
+public class ErrbitNotifer {
+    private static final String LOG_TAG = "ErrbitNotifier";
 
-    // Basic settings
-    private static final String AIRBRAKE_ENDPOINT = "http://airbrakeapp.com/notifier_api/v2/notices";
     private static final String AIRBRAKE_API_VERSION = "2.0";
 
-    private static final String NOTIFIER_NAME = "Android Airbrake Notifier";
-    private static final String NOTIFIER_VERSION = "1.3.0";
-    private static final String NOTIFIER_URL = "http://loopj.com";
+    private static final String NOTIFIER_NAME = "Android Errbit Notifier";
+    private static final String NOTIFIER_VERSION = "0.2.0";
+    private static final String NOTIFIER_URL = "http://welaika.com";
 
-    private static final String UNSENT_EXCEPTION_PATH = "/unsent_airbrake_exceptions/";
+    private static final String UNSENT_EXCEPTION_PATH = "/unsent_errbit_exceptions/";
 
     private static final String ENVIRONMENT_PRODUCTION = "production";
     private static final String ENVIRONMENT_DEFAULT = ENVIRONMENT_PRODUCTION;
@@ -69,47 +77,59 @@ public class AirbrakeNotifier {
     private static String versionName = "unknown";
     private static String phoneModel = android.os.Build.MODEL;
     private static String androidVersion = android.os.Build.VERSION.RELEASE;
+    private static String brandDevice = android.os.Build.BRAND;
+    private static String manufacturerDevice = android.os.Build.MANUFACTURER;
+    
 
     // Anything extra the app wants to add
     private static Map<String, String> extraData;
 
-    // Airbrake api key
+    // Errbit api key
     private static String apiKey;
 
+    // Errbit api key
+    private static String errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
+    
     // Exception storage info
     private static boolean notifyOnlyProduction = false;
     private static String filePath;
     private static boolean diskStorageEnabled = false;
 
-    // Wrapper class to send uncaught exceptions to airbrake
-    private static class AirbrakeExceptionHandler implements UncaughtExceptionHandler {
+    // Wrapper class to send uncaught exceptions to errbit
+    private static class ErrbitExceptionHandler implements UncaughtExceptionHandler {
         private UncaughtExceptionHandler defaultExceptionHandler;
 
-        public AirbrakeExceptionHandler(UncaughtExceptionHandler defaultExceptionHandlerIn) {
+        public ErrbitExceptionHandler(UncaughtExceptionHandler defaultExceptionHandlerIn) {
             defaultExceptionHandler = defaultExceptionHandlerIn;
         }
 
         public void uncaughtException(Thread t, Throwable e) {
-            AirbrakeNotifier.notify(e);
+            ErrbitNotifer.notify(e);
             defaultExceptionHandler.uncaughtException(t, e);
         }
     }
 
     // Register to send exceptions to airbrake
-    public static void register(Context context, String apiKey) {
-        register(context, apiKey, ENVIRONMENT_DEFAULT, true);
+    public static void register(Context context, String endpoint, String apiKey) {
+        register(context, endpoint, apiKey, ENVIRONMENT_DEFAULT, true);
     }
 
-    public static void register(Context context, String apiKey, String environmentName) {
-        register(context, apiKey, environmentName, true);
+    public static void register(Context context, String endpoint, String apiKey, String environmentName) {
+        register(context, endpoint, apiKey, environmentName, true);
     }
 
-    public static void register(Context context, String apiKey, String environmentName, boolean notifyOnlyProduction) {
+    public static void register(Context context, String endpoint, String apiKey, String environmentName, boolean notifyOnlyProduction) {
         // Require an airbrake api key
         if(apiKey != null) {
-            AirbrakeNotifier.apiKey = apiKey;
+            ErrbitNotifer.apiKey = apiKey;
         } else {
-            throw new RuntimeException("AirbrakeNotifier requires an Airbrake API key.");
+            throw new RuntimeException("ErrBitNotifier requires an API key.");
+        }
+        
+        if(endpoint != null) {
+            ErrbitNotifer.errbit_endpoint = "http://" + endpoint + "/notifier_api/v2/notices";
+        } else {
+            ErrbitNotifer.errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
         }
 
         // Checked if context is passed
@@ -119,16 +139,16 @@ public class AirbrakeNotifier {
         
         // Fill in environment name if passed
         if(environmentName != null) {
-            AirbrakeNotifier.environmentName = environmentName;
+            ErrbitNotifer.environmentName = environmentName;
         }
 
         // Check which exception types to notify
-        AirbrakeNotifier.notifyOnlyProduction = notifyOnlyProduction;
+        ErrbitNotifer.notifyOnlyProduction = notifyOnlyProduction;
 
         // Connect our default exception handler
         UncaughtExceptionHandler currentHandler = Thread.getDefaultUncaughtExceptionHandler();
-        if(!(currentHandler instanceof AirbrakeExceptionHandler) && (environmentName.equals(ENVIRONMENT_PRODUCTION) || !notifyOnlyProduction)) {
-            Thread.setDefaultUncaughtExceptionHandler(new AirbrakeExceptionHandler(currentHandler));
+        if(!(currentHandler instanceof ErrbitExceptionHandler) && (environmentName.equals(ENVIRONMENT_PRODUCTION) || !notifyOnlyProduction)) {
+            Thread.setDefaultUncaughtExceptionHandler(new ErrbitExceptionHandler(currentHandler));
         }
 
         // Load up current package name and version
@@ -163,7 +183,7 @@ public class AirbrakeNotifier {
      * @param extraData a Map of String -> String
      */
     public static void setExtraData(Map<String,String> extraData) {
-        AirbrakeNotifier.extraData = extraData;
+        ErrbitNotifer.extraData = extraData;
     }
 
     // Fire an exception to airbrake manually
@@ -274,14 +294,27 @@ public class AirbrakeNotifier {
             s.startTag("", "action");
             s.endTag("", "action");
             s.startTag("", "cgi-data");
+            
+            s.startTag("", "var");
+            s.attribute("", "key", "Manufacturer");
+            s.text(manufacturerDevice);
+            s.endTag("", "var");
+            
             s.startTag("", "var");
             s.attribute("", "key", "Device");
             s.text(phoneModel);
             s.endTag("", "var");
+            
+            s.startTag("", "var");
+            s.attribute("", "key", "Brand");
+            s.text(brandDevice);
+            s.endTag("", "var");
+            
             s.startTag("", "var");
             s.attribute("", "key", "Android Version");
             s.text(androidVersion);
             s.endTag("", "var");
+            
             s.startTag("", "var");
             s.attribute("", "key", "App Version");
             s.text(versionName);
@@ -337,7 +370,7 @@ public class AirbrakeNotifier {
     private static void sendExceptionData(File file) {
         try {
             boolean sent = false;
-            URL url = new URL(AIRBRAKE_ENDPOINT);
+            URL url = new URL(errbit_endpoint);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
                 // Set up the connection
@@ -358,8 +391,8 @@ public class AirbrakeNotifier {
 
                 // Flush the request through
                 int response = conn.getResponseCode();
-                Log.d(LOG_TAG, "Sent exception file " + file.getName() + " to airbrake. Got response code " + String.valueOf(response));
-		
+                Log.d(LOG_TAG, "Sent exception file " + file.getName() + " to Errbit. Got response code " + String.valueOf(response));
+
                 sent = true;
 
             } catch(IOException e) {
