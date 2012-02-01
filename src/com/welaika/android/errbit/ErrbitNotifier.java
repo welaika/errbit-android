@@ -57,7 +57,7 @@ import android.util.Xml;
  * 
  * Based on https://github.com/loopj/airbrake-android/ v.1.3.0  
  */
-public class ErrbitNotifer {
+public class ErrbitNotifier {
     private static final String LOG_TAG = "ErrbitNotifier";
 
     private static final String AIRBRAKE_API_VERSION = "2.0";
