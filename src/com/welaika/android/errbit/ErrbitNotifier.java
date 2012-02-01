@@ -104,7 +104,7 @@ public class ErrbitNotifier {
         }
 
         public void uncaughtException(Thread t, Throwable e) {
-            ErrbitNotifer.notify(e);
+            ErrbitNotifier.notify(e);
             defaultExceptionHandler.uncaughtException(t, e);
         }
     }
@@ -121,15 +121,15 @@ public class ErrbitNotifier {
     public static void register(Context context, String endpoint, String apiKey, String environmentName, boolean notifyOnlyProduction) {
         // Require an airbrake api key
         if(apiKey != null) {
-            ErrbitNotifer.apiKey = apiKey;
+            ErrbitNotifier.apiKey = apiKey;
         } else {
             throw new RuntimeException("ErrBitNotifier requires an API key.");
         }
         
         if(endpoint != null) {
-            ErrbitNotifer.errbit_endpoint = "http://" + endpoint + "/notifier_api/v2/notices";
+            ErrbitNotifier.errbit_endpoint = "http://" + endpoint + "/notifier_api/v2/notices";
         } else {
-            ErrbitNotifer.errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
+            ErrbitNotifier.errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
         }
 
         // Checked if context is passed
@@ -139,11 +139,11 @@ public class ErrbitNotifier {
         
         // Fill in environment name if passed
         if(environmentName != null) {
-            ErrbitNotifer.environmentName = environmentName;
+            ErrbitNotifier.environmentName = environmentName;
         }
 
         // Check which exception types to notify
-        ErrbitNotifer.notifyOnlyProduction = notifyOnlyProduction;
+        ErrbitNotifier.notifyOnlyProduction = notifyOnlyProduction;
 
         // Connect our default exception handler
         UncaughtExceptionHandler currentHandler = Thread.getDefaultUncaughtExceptionHandler();
@@ -183,7 +183,7 @@ public class ErrbitNotifier {
      * @param extraData a Map of String -> String
      */
     public static void setExtraData(Map<String,String> extraData) {
-        ErrbitNotifer.extraData = extraData;
+        ErrbitNotifier.extraData = extraData;
     }
 
     // Fire an exception to airbrake manually
