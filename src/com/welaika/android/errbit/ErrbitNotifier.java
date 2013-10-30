@@ -2,9 +2,9 @@
     Errbit Notifier for Android
     Copyright (c) 2012 Matteo Piotto <matteo.piotto@welaika.com>
     http://welaika.com
-    
+
     based on
-    
+
     Airbrake Notifier for Android
     Copyright (c) 2011 James Smith <james@loopj.com>
     http://loopj.com
@@ -54,8 +54,8 @@ import android.util.Xml;
  * ErrBit Notifier
  *
  * Logs exceptions to Errbit
- * 
- * Based on https://github.com/loopj/airbrake-android/ v.1.3.0  
+ *
+ * Based on https://github.com/loopj/airbrake-android/ v.1.3.0
  */
 public class ErrbitNotifier {
     private static final String LOG_TAG = "ErrbitNotifier";
@@ -70,6 +70,7 @@ public class ErrbitNotifier {
 
     private static final String ENVIRONMENT_PRODUCTION = "production";
     private static final String ENVIRONMENT_DEFAULT = ENVIRONMENT_PRODUCTION;
+    private static boolean ssl = false;
 
     // Exception meta-data
     private static String environmentName = ENVIRONMENT_DEFAULT;
@@ -79,7 +80,7 @@ public class ErrbitNotifier {
     private static String androidVersion = android.os.Build.VERSION.RELEASE;
     private static String brandDevice = android.os.Build.BRAND;
     private static String manufacturerDevice = android.os.Build.MANUFACTURER;
-    
+
 
     // Anything extra the app wants to add
     private static Map<String, String> extraData;
@@ -89,7 +90,7 @@ public class ErrbitNotifier {
 
     // Errbit api key
     private static String errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
-    
+
     // Exception storage info
     private static boolean notifyOnlyProduction = false;
     private static String filePath;
@@ -118,6 +119,14 @@ public class ErrbitNotifier {
         register(context, endpoint, apiKey, environmentName, true);
     }
 
+    public static void setSsl(boolean ssl_setting) {
+        ssl = ssl_setting;
+    }
+
+    public static boolean isSsl() {
+        return ssl;
+    }
+
     public static void register(Context context, String endpoint, String apiKey, String environmentName, boolean notifyOnlyProduction) {
         // Require an airbrake api key
         if(apiKey != null) {
@@ -125,9 +134,12 @@ public class ErrbitNotifier {
         } else {
             throw new RuntimeException("ErrBitNotifier requires an API key.");
         }
-        
+
+        String prefix = isSsl() ? "https" : "http";
+
+
         if(endpoint != null) {
-            ErrbitNotifier.errbit_endpoint = "http://" + endpoint + "/notifier_api/v2/notices";
+            ErrbitNotifier.errbit_endpoint = prefix + "://" + endpoint + "/notifier_api/v2/notices";
         } else {
             ErrbitNotifier.errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
         }
@@ -136,7 +148,7 @@ public class ErrbitNotifier {
         if(context == null) {
             throw new IllegalArgumentException("context cannot be null.");
         }
-        
+
         // Fill in environment name if passed
         if(environmentName != null) {
             ErrbitNotifier.environmentName = environmentName;
@@ -294,27 +306,27 @@ public class ErrbitNotifier {
             s.startTag("", "action");
             s.endTag("", "action");
             s.startTag("", "cgi-data");
-            
+
             s.startTag("", "var");
             s.attribute("", "key", "Manufacturer");
             s.text(manufacturerDevice);
             s.endTag("", "var");
-            
+
             s.startTag("", "var");
             s.attribute("", "key", "Device");
             s.text(phoneModel);
             s.endTag("", "var");
-            
+
             s.startTag("", "var");
             s.attribute("", "key", "Brand");
             s.text(brandDevice);
             s.endTag("", "var");
-            
+
             s.startTag("", "var");
             s.attribute("", "key", "Android Version");
             s.text(androidVersion);
             s.endTag("", "var");
-            
+
             s.startTag("", "var");
             s.attribute("", "key", "App Version");
             s.text(versionName);
@@ -401,7 +413,7 @@ public class ErrbitNotifier {
 
             } finally {
 
-                // delete the file only if sending was successful 
+                // delete the file only if sending was successful
                 if ( sent ) {
                     file.delete();
                 }
@@ -410,7 +422,7 @@ public class ErrbitNotifier {
             }
 
         } catch(Exception e) {
-          
+
           // unknown exception
           Log.v(LOG_TAG, "Exception caught:",e);
 
