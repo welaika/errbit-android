@@ -70,6 +70,7 @@ public class ErrbitNotifier {
 
     private static final String ENVIRONMENT_PRODUCTION = "production";
     private static final String ENVIRONMENT_DEFAULT = ENVIRONMENT_PRODUCTION;
+    private static boolean ssl = false;
 
     // Exception meta-data
     private static String environmentName = ENVIRONMENT_DEFAULT;
@@ -118,6 +119,14 @@ public class ErrbitNotifier {
         register(context, endpoint, apiKey, environmentName, true);
     }
 
+    public static void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
+    public static boolean isSsl() {
+        return this.ssl;
+    }
+
     public static void register(Context context, String endpoint, String apiKey, String environmentName, boolean notifyOnlyProduction) {
         // Require an airbrake api key
         if(apiKey != null) {
@@ -126,8 +135,11 @@ public class ErrbitNotifier {
             throw new RuntimeException("ErrBitNotifier requires an API key.");
         }
         
+        String prefix = isSsl() ? "https" : "http"; 
+        
+        
         if(endpoint != null) {
-            ErrbitNotifier.errbit_endpoint = "http://" + endpoint + "/notifier_api/v2/notices";
+            ErrbitNotifier.errbit_endpoint = prefix + "://" + endpoint + "/notifier_api/v2/notices";
         } else {
             ErrbitNotifier.errbit_endpoint = "http://airbrakeapp.com/notifier_api/v2/notices";
         }
