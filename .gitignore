@@ -2,4 +2,6 @@ _site
 MANIFEST.MF
 build
 build.num
+bin
+gen
 *.jar
